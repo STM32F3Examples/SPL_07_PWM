@@ -1,63 +1,82 @@
+/**
+ * @file main.c
+ * This program generates a PWM signal on pin B3 with a ramp like duty cycle 
+ * glowing a led attached to that pin (no included in board)
+ */
+
 #include "stm32f30x.h"                  // Device header
 /*Led PB13, Button PC13*/
 
 void delay_ms(int delay_time);
-void adc_init_injected(void);
+/**
+ * Initialize the TIMER2 Comparator 2 as a PWM generator on pin B3
+ * with frecuency = CLK_sys/((prescaler+1)*autorreload) and duty 
+ * cycle = 0  
+ * @param prescaler values from 0 to 6
+ * @param autoreload 
+ */
+void TIMER2_CH2_PWM_Init(int prescaler,int autoreload);
+/**
+ * Set the duty cycle of TIMER2 CH2 on pin B3
+ * @param dutyCycle values from 0.0 to 100.0  
+ * @param atoreload the value used as autoreload when calling
+ * TIMER2_CH2_PWM_Init
+ */
+void TIMER2_CH2_PWM_SetDutyCycle(float dutyCycle, int atoreload);
 
-unsigned int adc_val[4];
 int main(){
-	adc_init_injected();
+	//Values calculates for 1000KHz signal
+	short myPrescaler=0xF;
+	int myAutorreload=5000;
+	//Initialize PWM
+	TIMER2_CH2_PWM_Init(myPrescaler,myAutorreload);
 	while(1){
-		ADC_ClearFlag(ADC1,ADC_FLAG_JEOS);
-		ADC_StartInjectedConversion(ADC1);
-		while(!ADC_GetFlagStatus(ADC1,ADC_FLAG_JEOS));
-		delay_ms(0xFF);
-		adc_val[0]=ADC_GetInjectedConversionValue(ADC1,ADC_InjectedSequence_1);
-		adc_val[1]=ADC_GetInjectedConversionValue(ADC1,ADC_InjectedSequence_2);
+		//Glow the led every 3 seconds aprox
+		for(int i=0; i<100; i++){
+			TIMER2_CH2_PWM_SetDutyCycle(i,myAutorreload);
+			delay_ms(0x3FFF);
+		}
 	}
 }
 
-void adc_init_injected(void){
-	//Confiure pins PC0[AN6], PC1[AN7] for analog input operation
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC,ENABLE);
+void TIMER2_CH2_PWM_Init(int prescaler,int autoreload){
+	//USER LED / PB3  / TIM2_CH2 / AF1
+	RCC_AHBPeriphClockCmd(RCC_AHBENR_GPIOBEN ,ENABLE);
 	GPIO_InitTypeDef myGPIO;
 	GPIO_StructInit(&myGPIO);
-	myGPIO.GPIO_Pin=(GPIO_Pin_1|GPIO_Pin_0);
-	myGPIO.GPIO_Mode=GPIO_Mode_AN;
-	GPIO_Init(GPIOC,&myGPIO);
-	//Configure ADC
-	RCC_ADCCLKConfig(RCC_ADC12PLLCLK_OFF);
-	RCC_AHBPeriphClockCmd(RCC_AHBENR_ADC12EN,ENABLE); 
-	delay_ms(0xFFF);
-	ADC_CommonInitTypeDef myADC_Comm;
-	ADC_CommonStructInit(&myADC_Comm);
-	myADC_Comm.ADC_Clock=ADC_Clock_SynClkModeDiv1;
-	ADC_CommonInit(ADC1,&myADC_Comm);
-	ADC_VoltageRegulatorCmd(ADC1,ENABLE);
-	delay_ms(0xFFF);
+	myGPIO.GPIO_Pin=GPIO_Pin_3;
+	myGPIO.GPIO_Mode=GPIO_Mode_AF;
+	myGPIO.GPIO_Speed=GPIO_Speed_10MHz;
+	GPIO_Init(GPIOB,&myGPIO);
+	GPIO_PinAFConfig(GPIOB,GPIO_PinSource3,GPIO_AF_1);
+	//select the output mode by writing the CCS bits in the CCMRx register
 	
-	/*Initial calibration*/
-	ADC_SelectCalibrationMode(ADC1, ADC_CalibrationMode_Single);
-  ADC_StartCalibration(ADC1);
-  while(ADC_GetCalibrationStatus(ADC1) != RESET);
-	ADC_GetCalibrationValue(ADC1);
-	
-	ADC_InjectedInitTypeDef myADC;
-	ADC_InjectedStructInit(&myADC);
-	myADC.ADC_ExternalTrigInjecEventEdge=ADC_ExternalTrigInjecEventEdge_None;
-	myADC.ADC_ExternalTrigInjecConvEvent=ADC_ExternalTrigInjecConvEvent_0;
-	myADC.ADC_NbrOfInjecChannel=2;
-	myADC.ADC_InjecSequence1=ADC_InjectedChannel_6;
-	myADC.ADC_InjecSequence2=ADC_InjectedChannel_7;
-	myADC.ADC_InjecSequence3=ADC_InjectedChannel_6;
-	myADC.ADC_InjecSequence4=ADC_InjectedChannel_7;
-	ADC_InjectedInit(ADC1,&myADC);
-	ADC_InjectedChannelSampleTimeConfig(ADC1,ADC_InjectedChannel_6,ADC_SampleTime_7Cycles5);
-	ADC_InjectedChannelSampleTimeConfig(ADC1,ADC_InjectedChannel_7,ADC_SampleTime_7Cycles5);
-	//
-	/* wait for ADRDY */
-	ADC_Cmd(ADC1,ENABLE);
-  while(!ADC_GetFlagStatus(ADC1, ADC_FLAG_RDY));
+	//Timer time base configuration
+	RCC_APB1PeriphClockCmd(RCC_APB1ENR_TIM2EN,ENABLE);
+	TIM_TimeBaseInitTypeDef myTimeBase;
+	TIM_TimeBaseStructInit(&myTimeBase);
+	myTimeBase.TIM_CounterMode=TIM_CounterMode_Up;
+	myTimeBase.TIM_Period=autoreload;
+	myTimeBase.TIM_Prescaler=prescaler;
+	myTimeBase.TIM_ClockDivision= TIM_CKD_DIV1;
+	TIM_TimeBaseInit(TIM2,&myTimeBase);
+	//Timer capture compare configuration
+	TIM_OCInitTypeDef myTimerOC;
+	TIM_OCStructInit(&myTimerOC);
+	myTimerOC.TIM_OCMode=TIM_OCMode_PWM1;
+	myTimerOC.TIM_OCPolarity=TIM_OCPolarity_High;
+	myTimerOC.TIM_OutputState=TIM_OutputState_Enable;
+	myTimerOC.TIM_Pulse=autoreload;//0 Duty cycle at start
+	TIM_OC2Init(TIM2,&myTimerOC);
+	TIM_CCxCmd(TIM2,TIM_Channel_2,TIM_CCx_Enable);//enable CCP2
+	//start Timer
+	TIM_Cmd(TIM2,ENABLE);//Counter enabled
+}
+
+void TIMER2_CH2_PWM_SetDutyCycle(float dutyCycle, int autoreload){
+	int newDC=0;// new duty cycle
+	newDC=(int )((dutyCycle/100.0)*autoreload);
+	TIM_SetCompare2(TIM2,newDC);
 }
 
 void delay_ms(int delay_time){
