@@ -267,7 +267,7 @@
       <Focus>0</Focus>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\STM32F30x_StdPeriph_Driver\SPL_STM32F302x8.lib</PathWithFileName>
+      <PathWithFileName>..\STM32F30x_StdPeriph_Driver\bin\SPL_STM32F302x8.lib</PathWithFileName>
       <FilenameWithoutPath>SPL_STM32F302x8.lib</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>

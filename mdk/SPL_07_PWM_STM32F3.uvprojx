@@ -47,7 +47,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\Objects\</OutputDirectory>
-          <OutputName>SPL_05_ADC_Injected_STM32F3</OutputName>
+          <OutputName>SPL_07_PWM_STM32F3</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>0</CreateHexFile>
@@ -416,7 +416,7 @@
             <File>
               <FileName>SPL_STM32F302x8.lib</FileName>
               <FileType>4</FileType>
-              <FilePath>..\STM32F30x_StdPeriph_Driver\SPL_STM32F302x8.lib</FilePath>
+              <FilePath>..\STM32F30x_StdPeriph_Driver\bin\SPL_STM32F302x8.lib</FilePath>
             </File>
           </Files>
         </Group>

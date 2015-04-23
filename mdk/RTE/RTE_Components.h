@@ -3,7 +3,7 @@
  * Auto generated Run-Time-Environment Component Configuration File
  *      *** Do not modify ! ***
  *
- * Project: 'SPL_05_ADC_Injected_STM32F3' 
+ * Project: 'SPL_07_PWM_STM32F3' 
  * Target:  'Target 1' 
  */
 
