@@ -27,7 +27,7 @@ void TIMER2_CH2_PWM_SetDutyCycle(float dutyCycle, int atoreload);
 int main(){
 	//Values calculates for 1000KHz signal
 	short myPrescaler=0xF;
-	int myAutorreload=5000;
+	int myAutorreload=500;
 	//Initialize PWM
 	TIMER2_CH2_PWM_Init(myPrescaler,myAutorreload);
 	while(1){
@@ -75,7 +75,7 @@ void TIMER2_CH2_PWM_Init(int prescaler,int autoreload){
 
 void TIMER2_CH2_PWM_SetDutyCycle(float dutyCycle, int autoreload){
 	int newDC=0;// new duty cycle
-	newDC=(int )((dutyCycle/100.0)*autoreload);
+	newDC=(int )((dutyCycle/100.0f)*autoreload);
 	TIM_SetCompare2(TIM2,newDC);
 }
 
